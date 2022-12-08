@@ -90,6 +90,96 @@ for (( i=0; i<=s; i++ )); do
     if gunzip -f a.txt.gz; then break; fi
 done
 ```
-18.
+18. Напишите команду, которая выдаст текущий размер текстовой консоли (количество строк и столбцов)\
+```
+stty size
+```
+19. Напишите программу, которая выведет на экран семь строк разных цветов.\
+```
+for i in {1..7}; do
+echo "$(tput setaf $i)Print Blue"
+done
+```
+20. Напишите программу, которая будет показывать на пустом текстовом экране букву X. По нажатию на буквенные клавиши, назначенные на движения влево, вниз, вверх, вправо (h, j, k, l — в стиле VIM; z, x, s, c  — в стиле Qake), буква должна передвигаться по экрану в соответствующем направлении, причем символы нажатых клавиш на экране появляться не должны. Поведение у краев экрана на ваше усмотрение. Буква q — выход из программы и возвращение терминала в нормальное состояние. Нельзя требовать нажатия клавиши Return после управляющей буквы.\
+```
+#!/bin/bash
+
+tput clear
+tput civis
+row_pos=0
+col_pos=0
+tput cup $row_pos $col_pos
+echo -n "X"
+while :
+do
+    read -n1 -s key
+    case $key in
+        "q")
+            tput cnorm
+            tput clear
+            tput cup 0 0
+            break
+            ;;
+        "c"|"l")
+            col_pos=$((($col_pos+$COLUMNS+1)%$COLUMNS))
+            ;;
+        "z"|"h")
+            col_pos=$((($col_pos+$COLUMNS-1)%$COLUMNS))
+            ;;
+        "s"|"k")
+            row_pos=$((($row_pos+$LINES-1)%$LINES))
+            ;;
+        "x"|"j")
+            row_pos=$((($row_pos+$LINES+1)%$LINES))
+            ;;
+    esac
+    tput clear
+    tput cup $row_pos $col_pos
+    echo -n "X"
+done
+```
+21. Напишите программу, которая очистит экран. Примерно в центре экрана выведет какой-нибудь вопрос, а в левом нижнем углу выведет приглашение на ввод ответа в виде символов "?>". После ввода ответа - очистить экран и вывести в середине экрана: Ваш ответ ... и введенный ответ\
+```
+#!/bin/bash
+rows_mid=$(($LINES/2))
+cols_mid=$(($COLUMNS/2))
+
+tput clear
+tput cup $rows_mid $cols_mid # $(($COLUMNS/2)) $(($LINES/2))
+echo "What is your name?"
+tput cup $LINES 0
+echo -n "?> "
+read answer
+tput clear
+tput cup $rows_mid $cols_mid 
+echo "Your name is ${answer}"
+```
+22. У dmesg есть несколько опций по форматированию меток времени. Давайте создадим свой формат.
+Напишите скрипт, который перекодирует время в секундах с момента загрузки ОС из сообщений dmesg в дни, часы и минуты. Пример входной строки:
+[21410.912099] Lustre: Mounted lustre-client
+Должно получиться что-то вроде:
+[12d 1h 14m 17.912 s] Lustre: Mounted lustre-client
+dmesg -H не зачту. Опция -H  есть не во всех версиях dmesg
+```
+#!/bin/bash
+
+dmesg |
+    while IFS= read -r line
+    do
+        if [[ $line =~ ^\[\ *([0-9]+)\.[0-9]+\]\ (.*) ]]; then
+            seconds=${line#*[}
+            seconds=${seconds%%]*}
+            d=$(echo "$seconds / 86400"| bc)
+            h=$(echo "$seconds/ 3600" | bc )
+            m=$(echo "($seconds % 3600)/60" | bc)
+            s=$(echo "$seconds % 60" | bc)
+            printf "[%.0fd %.0fh %.0fm %0.7fs] ${line#*]} \n" $d $h $m $s
+        else
+            echo "$line"
+        fi
+    done
+```
+
+
 
 
